@@ -1,6 +1,7 @@
 package com.acme.hello;
 
-import javax.xml.bind.SchemaOutputResolver;
+import java.io.IOException;
+import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.rmi.Naming;
@@ -15,19 +16,27 @@ public class HelloServer {
     static HelloImpl impl;
     static Remote stub;
     static Registry registry;
-    static final RMIClientSocketFactory CSF = Socket::new;
-    static final RMIServerSocketFactory SSF = port -> {
-        ServerSocket serverSocket = new ServerSocket(port);
-        lastUsedPort = serverSocket.getLocalPort();
-        return serverSocket;
-    };
     static int lastUsedPort = -1;
+
+    enum SocketFactory implements RMIClientSocketFactory, RMIServerSocketFactory {
+        INSTANCE;
+
+        public Socket createSocket(String host, int port) throws IOException {
+            return new Socket(host, port);
+        }
+
+        public ServerSocket createServerSocket(int port) throws IOException {
+            ServerSocket serverSocket = new ServerSocket(port);
+            lastUsedPort = serverSocket.getLocalPort();
+            return serverSocket;
+        }
+    }
 
     public static synchronized int start(int port) {
         try {
             impl = new HelloImpl();
-            stub = UnicastRemoteObject.exportObject(impl, port, CSF, SSF);
-            registry = LocateRegistry.createRegistry(lastUsedPort, CSF, SSF);
+            stub = UnicastRemoteObject.exportObject(impl, port, SocketFactory.INSTANCE, SocketFactory.INSTANCE);
+            registry = LocateRegistry.createRegistry(lastUsedPort, SocketFactory.INSTANCE, SocketFactory.INSTANCE);
             Naming.rebind("//localhost:" + lastUsedPort + "/MessengerService", stub);
             System.out.println("Stub and registry Created and bound.");
         } catch (Exception e) {
