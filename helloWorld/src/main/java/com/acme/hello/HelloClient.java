@@ -1,8 +1,9 @@
 package com.acme.hello;
 
-import java.rmi.RMISecurityManager;
 import java.rmi.Naming;
-import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+
 public class HelloClient
 {
     public static void main(String arg[])
@@ -14,10 +15,11 @@ public class HelloClient
 
         try
         {
-            Hello obj = (Hello) Naming.lookup( "//" +
-                    "localhost:1099" +
-                    "/HelloServer");         //objectname in registry
-            System.out.println(obj.sayHello());
+            Registry registry = LocateRegistry.getRegistry();
+            Hello server = (Hello) registry
+                    .lookup("MessengerService");
+            String responseMessage = server.sayHello();
+            String expectedMessage = "Hello world!";
         }
         catch (Exception e)
         {
