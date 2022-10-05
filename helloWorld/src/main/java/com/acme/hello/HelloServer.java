@@ -1,7 +1,9 @@
 package com.acme.hello;
 
+import javax.xml.bind.SchemaOutputResolver;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.rmi.Naming;
 import java.rmi.Remote;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -24,9 +26,9 @@ public class HelloServer {
     public static synchronized int start(int port) {
         try {
             impl = new HelloImpl();
-            UnicastRemoteObject.exportObject(impl, port, CSF, SSF);
+            stub = UnicastRemoteObject.exportObject(impl, port, CSF, SSF);
             registry = LocateRegistry.createRegistry(lastUsedPort, CSF, SSF);
-            registry.rebind("MessengerService", stub);
+            Naming.rebind("//localhost:" + lastUsedPort + "/MessengerService", stub);
             System.out.println("Stub and registry Created and bound.");
         } catch (Exception e) {
             System.out.println("HelloServer err: " + e.getMessage());

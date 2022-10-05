@@ -16,7 +16,7 @@ public class InitialTest {
     static int port;
 
     @BeforeAll
-    static void setup(PartRunner runner, Bus bus) {
+    static void setup(PartRunner runner) {
 
         runner.useNewJVMWhenForking();
         // Create a new part called HelloServer
@@ -26,7 +26,7 @@ public class InitialTest {
                 // Tell Testify how to stop this part
                 minibus -> HelloServer.stop());
         // Wait for the server to start
-        port = bus.get(SERVER_STARTED);
+        port = runner.bus("HelloServer").get(SERVER_STARTED);
     }
 
     private static void startServer(Bus bus) {
@@ -40,11 +40,13 @@ public class InitialTest {
     @Test
     void testPrint() throws Exception {
 
-            Hello obj = (Hello) Naming.lookup( "//" +
-                    "localhost:" + port +
-                    "/MessengerService");         //objectname in registry
-            System.out.println(obj.sayHello());
-            System.out.println(port);
+        System.out.println(port);
+
+        String lookupURL = "//localhost:" + port + "/MessengerService";
+        System.out.println(lookupURL);
+        Hello obj = (Hello) Naming.lookup(lookupURL);         //objectname in registry
+        System.out.println(obj.sayHello());
+        System.out.println(port);
 
     }
 }
