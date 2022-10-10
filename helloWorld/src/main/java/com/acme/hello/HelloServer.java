@@ -10,8 +10,13 @@ import java.rmi.registry.Registry;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Optional;
 
 public class HelloServer {
+    static {
+        // allow the registry to hold acme objects
+        System.setProperty("sun.rmi.registry.registryFilter", "java.**;com.acme.**");
+    }
     static HelloImpl impl;
     static Remote stub;
     static Registry registry;
@@ -29,6 +34,16 @@ public class HelloServer {
             lastUsedPort = serverSocket.getLocalPort();
             return serverSocket;
         }
+    }
+
+    public static void main(String[] args) {
+        int requestedPort = Optional.of(args)
+                .filter(arr -> arr.length > 0)
+                .map(arr -> arr[0])
+                .map(Integer::parseInt)
+                .orElse(0);
+        int port = start(requestedPort);
+        System.out.println("HelloServer started on port " + port);
     }
 
     public static synchronized int start(int port) {
