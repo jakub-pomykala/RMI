@@ -14,7 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
-import static com.acme.hello.InitialTest.ServerEvent.SERVER_STARTED;
+import static com.acme.hello.InitialTest.ServerEvent.*;
 
 @ConfigurePartRunner
 public class InitialTest {
@@ -27,16 +27,22 @@ public class InitialTest {
         // Create a new part called HelloServer
         runner.fork("HelloServer",
                 // Tell Testify how to start this new part
-                InitialTest::startServer,
+                InitialTest::runServer,
                 // Tell Testify how to stop this part
-                minibus -> HelloServer.stop());
+                bus -> bus
+                        // Send a stp request
+                        .put(STOP_REQUESTED, 0)
+                        // Wait for stopped server response
+                        .get(SERVER_STOPPED));
         // Wait for the server to start
         port = runner.bus("HelloServer").get(SERVER_STARTED);
         lookupURL = "//localhost:" + port + "/MessengerService";
         System.out.println(lookupURL);
     }
 
-    private static void startServer(Bus bus) {
+    // This method runs in the server process
+    private static void runServer(Bus bus) {
+        // Line 46-51 specific to RMI serialization and logging
         final ConsoleHandler consoleHandler = new ConsoleHandler();
         consoleHandler.setLevel(Level.FINEST);
         consoleHandler.setFormatter(new SimpleFormatter());
@@ -47,9 +53,15 @@ public class InitialTest {
         // Notify the test process that the server has now started on a particular port
         bus.put(SERVER_STARTED, port);
         System.out.println(port);
+        // Get STOP_REQUESTED event from the bus
+        bus.get(STOP_REQUESTED);
+        // call stop method from HelloServer class
+        HelloServer.stop();
+        // Send SERVER_STOPPED event and port back to the client
+        bus.put(SERVER_STOPPED, port);
     }
 
-    enum ServerEvent implements TypeSpec<Integer> { SERVER_STARTED }
+    enum ServerEvent implements TypeSpec<Integer> { SERVER_STARTED, STOP_REQUESTED, SERVER_STOPPED }
 
     @Test
     void testHello() throws Exception {

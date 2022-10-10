@@ -21,6 +21,7 @@ public class HelloServer {
     static Remote stub;
     static Registry registry;
     static int lastUsedPort = -1;
+    static volatile String bindPoint;
 
     enum SocketFactory implements RMIClientSocketFactory, RMIServerSocketFactory {
         INSTANCE;
@@ -51,7 +52,8 @@ public class HelloServer {
             impl = new HelloImpl();
             stub = UnicastRemoteObject.exportObject(impl, port, SocketFactory.INSTANCE, SocketFactory.INSTANCE);
             registry = LocateRegistry.createRegistry(lastUsedPort, SocketFactory.INSTANCE, SocketFactory.INSTANCE);
-            Naming.rebind("//localhost:" + lastUsedPort + "/MessengerService", stub);
+            bindPoint = "//localhost:" + lastUsedPort + "/MessengerService";
+            Naming.rebind(bindPoint, stub);
             System.out.println("Stub and registry Created and bound.");
         } catch (Exception e) {
             System.out.println("HelloServer err: " + e.getMessage());
@@ -60,9 +62,12 @@ public class HelloServer {
         return lastUsedPort;
     }
 
-    public static void stop() {
+    public static synchronized void stop() {
         try {
-            UnicastRemoteObject.unexportObject(stub, true);
+            System.out.println(lastUsedPort);
+            System.out.println(bindPoint);
+            Naming.unbind(bindPoint);
+            UnicastRemoteObject.unexportObject(impl, true);
             System.out.println("Impl stopped");
             UnicastRemoteObject.unexportObject(registry, true);
             System.out.println("Registry stopped");
