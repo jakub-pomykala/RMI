@@ -1,5 +1,6 @@
 package com.acme.hello;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import testify.bus.Bus;
@@ -18,6 +19,7 @@ import static com.acme.hello.InitialTest.ServerEvent.SERVER_STARTED;
 @ConfigurePartRunner
 public class InitialTest {
     static int port;
+    private static String lookupURL;
 
     @BeforeAll
     static void setup(PartRunner runner) {
@@ -30,6 +32,8 @@ public class InitialTest {
                 minibus -> HelloServer.stop());
         // Wait for the server to start
         port = runner.bus("HelloServer").get(SERVER_STARTED);
+        lookupURL = "//localhost:" + port + "/MessengerService";
+        System.out.println(lookupURL);
     }
 
     private static void startServer(Bus bus) {
@@ -42,18 +46,22 @@ public class InitialTest {
         int port = HelloServer.start(0);
         // Notify the test process that the server has now started on a particular port
         bus.put(SERVER_STARTED, port);
+        System.out.println(port);
     }
 
     enum ServerEvent implements TypeSpec<Integer> { SERVER_STARTED }
 
     @Test
-    void testPrint() throws Exception {
-        System.out.println(port);
-        String lookupURL = "//localhost:" + port + "/MessengerService";
-        System.out.println(lookupURL);
+    void testHello() throws Exception {
         Hello obj = (Hello) Naming.lookup(lookupURL);         //objectname in registry
         System.out.println(obj.sayHello());
-        System.out.println(port);
-
     }
+
+    @Test
+    void testSetGreeting() throws Exception {
+        Hello hello = (Hello) Naming.lookup(lookupURL);
+        hello.setGreeting("Good day!");
+        Assertions.assertEquals("Good day!", hello.sayHello());
+    }
+
 }
