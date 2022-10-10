@@ -21,7 +21,6 @@ public class InitialTest {
 
     @BeforeAll
     static void setup(PartRunner runner) {
-
         runner.useNewJVMWhenForking();
         // Create a new part called HelloServer
         runner.fork("HelloServer",
